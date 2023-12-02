@@ -30,39 +30,46 @@ impl Turn {
         }
     }
 
-    fn is_valid(&self, starting: &Turn) -> bool {
-        if self.red > starting.red || self.green > starting.green || self.blue > starting.blue {
-            return false;
-        }
-        true
+    fn power(&self) -> i32 {
+        self.red * self.green * self.blue
     }
 }
 
 #[derive(PartialEq, Debug)]
 struct Game {
     id: i32,
-    starting: Turn,
     turns: Vec<Turn>,
 }
 
 impl Game {
-    fn from_string(input: &str, starting: Turn) -> Self {
+    fn from_string(input: &str) -> Self {
         let raw_game = input.trim().split_once(':').unwrap();
         let game_info = raw_game.0.trim().split_once(' ').unwrap();
         let raw_turns = raw_game.1.trim();
         Game {
             id: game_info.1.parse().unwrap(),
-            starting,
             turns: raw_turns.split(';').map(Turn::from_string).collect(),
         }
     }
-    fn is_valid(&self) -> bool {
+
+    fn minimum(&self) -> Turn {
+        let mut min = Turn {
+            red: 0,
+            blue: 0,
+            green: 0,
+        };
         for turn in self.turns.iter() {
-            if !turn.is_valid(&(self.starting)) {
-                return false;
-            }
+            if min.red < turn.red {
+                min.red = turn.red
+            };
+            if min.green < turn.green {
+                min.green = turn.green
+            };
+            if min.blue < turn.blue {
+                min.blue = turn.blue
+            };
         }
-        true
+        min
     }
 }
 
@@ -73,30 +80,20 @@ fn main() {
 }
 
 fn part1(input: &str) -> String {
-    let starting = Turn {
-        red: 12,
-        green: 13,
-        blue: 14,
-    };
-    let games: Vec<Game> = input
-        .trim()
-        .split('\n')
-        .map(|x| Game::from_string(x, starting.clone()))
-        .collect();
-    let valid_games: Vec<&Game> = games.iter().filter(|x| x.is_valid()).collect();
-    let sum: i32 = valid_games.iter().map(|x| x.id).sum();
+    let games: Vec<Game> = input.trim().split('\n').map(Game::from_string).collect();
+    let sum: i32 = games.iter().map(|x| x.minimum().power()).sum();
     sum.to_string()
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_2 {
     use super::*;
     use rstest::rstest;
 
     #[test]
-    fn part_1() {
+    fn part_2() {
         let input = include_str!("../test1.txt");
-        assert_eq!("8", part1(input));
+        assert_eq!("2286", part1(input));
     }
 
     #[rstest]
@@ -111,11 +108,6 @@ mod tests {
         "Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue",
         Game {
             id: 2,
-            starting: Turn {
-                red: 0,
-                blue: 0,
-                green: 0,
-            },
             turns: Vec::from([
                 Turn {
                     red: 0,
@@ -136,16 +128,6 @@ mod tests {
         }
     )]
     fn game_from_string(#[case] input: &str, #[case] output: Game) {
-        assert_eq!(
-            output,
-            Game::from_string(
-                input,
-                Turn {
-                    red: 0,
-                    green: 0,
-                    blue: 0
-                }
-            )
-        )
+        assert_eq!(output, Game::from_string(input,))
     }
 }
