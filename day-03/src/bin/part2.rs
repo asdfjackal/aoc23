@@ -7,20 +7,27 @@ struct EngineNumber {
     end: i32,
 }
 
-impl EngineNumber {
-    fn is_adjacent(&self, symbols: &[EngineSymbol]) -> bool {
-        symbols.iter().any(|x| {
-            x.row <= self.row + 1
-                && x.row >= self.row - 1
-                && x.column <= self.end + 1
-                && x.column >= self.start - 1
-        })
-    }
-}
-
-struct EngineSymbol {
+struct EngineGear {
     row: i32,
     column: i32,
+}
+
+impl EngineGear {
+    fn ratio(&self, numbers: &[EngineNumber]) -> i32 {
+        let adjacent: Vec<&EngineNumber> = numbers
+            .iter()
+            .filter(|x| {
+                self.row <= x.row + 1
+                    && self.row >= x.row - 1
+                    && self.column <= x.end + 1
+                    && self.column >= x.start - 1
+            })
+            .collect();
+        if adjacent.len() == 2 {
+            return adjacent.iter().map(|x| x.value).product();
+        }
+        0
+    }
 }
 
 fn main() {
@@ -31,9 +38,9 @@ fn main() {
 
 fn part1(input: &str) -> String {
     let mut numbers = Vec::new();
-    let mut symbols = Vec::new();
+    let mut gears = Vec::new();
     let number_regex = Regex::new(r"\d+").unwrap();
-    let symbol_regex = Regex::new(r"[^\d\.]").unwrap();
+    let symbol_regex = Regex::new(r"\*").unwrap();
     for (i, row) in input.trim().split('\n').enumerate() {
         let row_num = i32::try_from(i).unwrap();
         number_regex.find_iter(row).for_each(|x| {
@@ -45,39 +52,23 @@ fn part1(input: &str) -> String {
             });
         });
         symbol_regex.find_iter(row).for_each(|x| {
-            symbols.push(EngineSymbol {
+            gears.push(EngineGear {
                 row: row_num,
                 column: i32::try_from(x.start()).unwrap(),
             })
         })
     }
-    let sum: i32 = numbers
-        .iter()
-        .filter(|x| x.is_adjacent(symbols.as_slice()))
-        .map(|x| x.value)
-        .sum();
+    let sum: i32 = gears.iter().map(|x| x.ratio(numbers.as_slice())).sum();
     sum.to_string()
 }
 
 #[cfg(test)]
-mod tests_1 {
+mod tests_2 {
     use super::*;
 
     #[test]
-    fn part_1() {
+    fn part_2() {
         let input = include_str!("../test1.txt");
-        assert_eq!("4361", part1(input));
-    }
-
-    #[test]
-    fn is_adjacent() {
-        let number = EngineNumber {
-            value: 123,
-            start: 2,
-            end: 4,
-            row: 2,
-        };
-        let symbol = EngineSymbol { row: 3, column: 5 };
-        assert!(number.is_adjacent(vec![symbol].as_slice()))
+        assert_eq!("467835", part1(input));
     }
 }
