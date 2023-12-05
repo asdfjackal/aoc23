@@ -159,7 +159,6 @@ fn part2(input: &str) -> String {
         seeds = output;
     }
     seeds.sort_by_key(|x| x.start);
-    dbg!(&seeds);
     seeds.first().unwrap().start.to_string()
 }
 
