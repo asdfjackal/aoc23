@@ -123,7 +123,7 @@ mod tests_2 {
     use super::*;
 
     #[test]
-    fn part_1() {
+    fn part_2() {
         let input = include_str!("../test1.txt");
         assert_eq!("46", part2(input));
     }
