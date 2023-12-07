@@ -1,5 +1,5 @@
+use itertools::Itertools;
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
 const CARDS: &str = "J23456789TQKA";
 
@@ -18,93 +18,46 @@ enum HandType {
     FiveOfAKind,
 }
 
-impl HandType {
-    fn get_type(input: &[char; 5]) -> HandType {
-        let mut card_map = input.iter().fold(HashMap::new(), |mut map, x| {
-            *map.entry(x).or_insert(0) += 1;
-            map
-        });
-        let jokers: u64 = *card_map.get(&'J').unwrap_or(&0);
-        card_map.remove(&'J');
-        let (_, mut counts): (Vec<&char>, Vec<&u64>) = card_map.iter().unzip();
-        counts.sort();
-        counts.reverse();
-        let counts_string = counts
-            .iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join("");
-        if jokers >= 4 {
-            return HandType::FiveOfAKind;
-        }
+fn get_type(input: &str) -> HandType {
+    use HandType::*;
 
-        if jokers == 3 {
-            if counts_string.starts_with('2') {
-                return HandType::FiveOfAKind;
-            }
-            return HandType::FourOfAKind;
-        }
-
-        if jokers == 2 {
-            if counts_string.starts_with('3') {
-                return HandType::FiveOfAKind;
-            }
-            if counts_string.starts_with('2') {
-                return HandType::FourOfAKind;
-            }
-            return HandType::ThreeOfAKind;
-        }
-
-        if jokers == 1 {
-            if counts_string.starts_with('4') {
-                return HandType::FiveOfAKind;
-            }
-            if counts_string.starts_with('3') {
-                return HandType::FourOfAKind;
-            }
-            if counts_string.starts_with("22") {
-                return HandType::FullHouse;
-            }
-            if counts_string.starts_with('2') {
-                return HandType::ThreeOfAKind;
-            }
-            return HandType::OnePair;
-        }
-
-        if counts_string.starts_with('5') {
-            return HandType::FiveOfAKind;
-        }
-        if counts_string.starts_with('4') {
-            return HandType::FourOfAKind;
-        }
-        if counts_string.starts_with("32") {
-            return HandType::FullHouse;
-        }
-        if counts_string.starts_with('3') {
-            return HandType::ThreeOfAKind;
-        }
-        if counts_string.starts_with("22") {
-            return HandType::TwoPair;
-        }
-        if counts_string.starts_with('2') {
-            return HandType::OnePair;
-        }
-        HandType::HighCard
+    let mut card_map = input.chars().counts();
+    let jokers: usize = *card_map.get(&'J').unwrap_or(&0usize);
+    if jokers == 5 {
+        return FiveOfAKind;
+    }
+    card_map.remove(&'J');
+    let mut counts = card_map.values().collect_vec();
+    counts.sort();
+    let counts_string = counts
+        .iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join("");
+    let counts_string = (counts_string.parse::<u64>().unwrap() + jokers as u64).to_string();
+    match counts_string.as_str() {
+        "5" => FiveOfAKind,
+        "14" => FourOfAKind,
+        "23" => FullHouse,
+        "113" => ThreeOfAKind,
+        "122" => TwoPair,
+        "1112" => OnePair,
+        _ => HighCard,
     }
 }
 
 #[derive(Eq, PartialEq, Debug)]
 struct Hand {
-    cards: [char; 5],
+    cards: String,
     hand_type: HandType,
     bid: u64,
 }
 
 impl Hand {
-    fn from_slice(input: &[char; 5], bid: u64) -> Self {
+    fn from_slice(input: &str, bid: u64) -> Self {
         Hand {
-            cards: *input,
-            hand_type: HandType::get_type(input),
+            cards: input.to_string(),
+            hand_type: get_type(input),
             bid,
         }
     }
@@ -125,10 +78,14 @@ impl Ord for Hand {
             return Ordering::Greater;
         }
         for i in 0..5 {
-            if get_card_value(self.cards[i]) > get_card_value(other.cards[i]) {
+            if get_card_value(self.cards.as_bytes()[i] as char)
+                > get_card_value(other.cards.as_bytes()[i] as char)
+            {
                 return Ordering::Less;
             }
-            if get_card_value(self.cards[i]) < get_card_value(other.cards[i]) {
+            if get_card_value(self.cards.as_bytes()[i] as char)
+                < get_card_value(other.cards.as_bytes()[i] as char)
+            {
                 return Ordering::Greater;
             }
         }
@@ -147,14 +104,9 @@ fn part1(input: &str) -> String {
         .lines()
         .map(|x| {
             let mut row = x.trim().split(' ');
-            let mut cards = [' '; 5];
-            row.next()
-                .unwrap()
-                .chars()
-                .zip(cards.iter_mut())
-                .for_each(|(c, ptr)| *ptr = c);
+            let cards = row.next().unwrap();
             let bid: u64 = row.next().unwrap().parse().unwrap();
-            Hand::from_slice(&cards, bid)
+            Hand::from_slice(cards, bid)
         })
         .collect();
     hands.sort();
