@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-const CARDS: &str = "23456789TJQKA";
+const CARDS: &str = "J23456789TQKA";
 
 fn get_card_value(card: char) -> usize {
     CARDS.find(card).unwrap()
@@ -20,11 +20,13 @@ enum HandType {
 
 impl HandType {
     fn get_type(input: &[char; 5]) -> HandType {
-        let card_map = input.iter().fold(HashMap::new(), |mut map, x| {
+        let mut card_map = input.iter().fold(HashMap::new(), |mut map, x| {
             *map.entry(x).or_insert(0) += 1;
             map
         });
-        let (_, mut counts): (Vec<&char>, Vec<&i32>) = card_map.iter().unzip();
+        let jokers: u64 = *card_map.get(&'J').unwrap_or(&0);
+        card_map.remove(&'J');
+        let (_, mut counts): (Vec<&char>, Vec<&u64>) = card_map.iter().unzip();
         counts.sort();
         counts.reverse();
         let counts_string = counts
@@ -32,6 +34,43 @@ impl HandType {
             .map(|x| x.to_string())
             .collect::<Vec<String>>()
             .join("");
+        if jokers >= 4 {
+            return HandType::FiveOfAKind;
+        }
+
+        if jokers == 3 {
+            if counts_string.starts_with('2') {
+                return HandType::FiveOfAKind;
+            }
+            return HandType::FourOfAKind;
+        }
+
+        if jokers == 2 {
+            if counts_string.starts_with('3') {
+                return HandType::FiveOfAKind;
+            }
+            if counts_string.starts_with('2') {
+                return HandType::FourOfAKind;
+            }
+            return HandType::ThreeOfAKind;
+        }
+
+        if jokers == 1 {
+            if counts_string.starts_with('4') {
+                return HandType::FiveOfAKind;
+            }
+            if counts_string.starts_with('3') {
+                return HandType::FourOfAKind;
+            }
+            if counts_string.starts_with("22") {
+                return HandType::FullHouse;
+            }
+            if counts_string.starts_with('2') {
+                return HandType::ThreeOfAKind;
+            }
+            return HandType::OnePair;
+        }
+
         if counts_string.starts_with('5') {
             return HandType::FiveOfAKind;
         }
@@ -129,12 +168,12 @@ fn part1(input: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests_1 {
+mod tests_2 {
     use super::*;
 
     #[test]
-    fn part_1() {
+    fn part_2() {
         let input = include_str!("../test1.txt");
-        assert_eq!("6440", part1(input));
+        assert_eq!("5905", part1(input));
     }
 }
