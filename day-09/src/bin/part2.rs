@@ -1,6 +1,6 @@
 fn main() {
     let input = include_str!("../input1.txt");
-    let output = part1(input);
+    let output = part2(input);
     dbg!(output);
 }
 
@@ -15,11 +15,11 @@ fn process_line(input: Vec<i32>) -> i32 {
         return 0;
     }
     let difs = get_difs(input.as_slice());
-    let interp = process_line(difs) + input.last().unwrap();
+    let interp = input.first().unwrap() - process_line(difs);
     interp
 }
 
-fn part1(input: &str) -> String {
+fn part2(input: &str) -> String {
     input
         .trim()
         .lines()
@@ -35,7 +35,7 @@ fn part1(input: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests_1 {
+mod tests_2 {
     use super::*;
 
     #[test]
@@ -47,12 +47,12 @@ mod tests_1 {
     #[test]
     fn test_process_line() {
         let input = vec![10, 13, 16, 21, 30, 45];
-        assert_eq!(68, process_line(input));
+        assert_eq!(5, process_line(input));
     }
 
     #[test]
-    fn part_1() {
+    fn part_2() {
         let input = include_str!("../test1.txt");
-        assert_eq!("114", part1(input));
+        assert_eq!("2", part2(input));
     }
 }
