@@ -13,11 +13,11 @@ enum Direction {
 
 fn main() {
     let input = include_str!("../input1.txt");
-    let output = part1(input);
+    let output = part2(input);
     dbg!(output);
 }
 
-fn determine_starting_char(board: &Vec<Vec<char>>, start: &Point) -> char {
+fn determine_starting_char(board: &[Vec<char>], start: &Point) -> char {
     let (mut north, mut south, mut east, mut west) = (false, false, false, false);
     if start.x != 0 {
         west = matches!(
@@ -79,7 +79,44 @@ fn get_at_point(board: &[Vec<char>], point: &Point) -> char {
     *board.get(point.y).unwrap().get(point.x).unwrap()
 }
 
-fn part1(input: &str) -> String {
+fn get_points_inside(row: &[usize], width: usize, y: usize, board: &[Vec<char>]) -> u32 {
+    let mut total_inside = 0;
+    let mut inside = false;
+    let mut last_turn = ' ';
+    for i in 0..width {
+        if row.contains(&i) {
+            let point = Point { x: i, y };
+            let mut path_char = get_at_point(board, &point);
+            if path_char == 'S' {
+                path_char = determine_starting_char(board, &point)
+            }
+            if path_char == 'F' || path_char == 'L' {
+                last_turn = path_char;
+            }
+            match path_char {
+                '|' => inside = !inside,
+                '7' => {
+                    if last_turn == 'L' {
+                        inside = !inside
+                    }
+                }
+                'J' => {
+                    if last_turn == 'F' {
+                        inside = !inside
+                    }
+                }
+                _ => (),
+            }
+            continue;
+        }
+        if inside {
+            total_inside += 1;
+        }
+    }
+    total_inside
+}
+
+fn part2(input: &str) -> String {
     use Direction::*;
     let mut board: Vec<Vec<char>> = Vec::new();
     input
@@ -96,7 +133,7 @@ fn part1(input: &str) -> String {
             }
         }
     }
-    let mut path = vec!['S'];
+    let mut path = vec![start];
     let mut current_char = determine_starting_char(&board, &start);
     let mut current_point = start;
     let mut dir_in = match current_char {
@@ -121,28 +158,55 @@ fn part1(input: &str) -> String {
             }
         }
         current_char = get_at_point(board.as_slice(), &current_point);
-        path.push(current_char);
+        path.push(current_point);
         if current_char == 'S' {
             break;
         }
     }
 
-    ((path.len() - 1) / 2).to_string()
+    let height = board.len();
+    let width = board.get(0).unwrap().len();
+
+    let mut insides = Vec::new();
+
+    for j in 0..height {
+        let mut path_intersections: Vec<usize> =
+            path.iter().filter(|p| p.y == j).map(|x| x.x).collect();
+        path_intersections.sort();
+        let points_inside = get_points_inside(path_intersections.as_slice(), width, j, &board);
+        insides.push(points_inside);
+    }
+
+    dbg!(&insides);
+
+    insides.iter().sum::<u32>().to_string()
 }
 
 #[cfg(test)]
-mod tests_1 {
+mod tests_2 {
     use super::*;
 
     #[test]
-    fn test_input_1() {
-        let input = include_str!("../test1.txt");
-        assert_eq!("4", part1(input));
+    fn test_input_3() {
+        let input = include_str!("../test3.txt");
+        assert_eq!("4", part2(input));
     }
 
     #[test]
-    fn test_input_2() {
-        let input = include_str!("../test2.txt");
-        assert_eq!("8", part1(input));
+    fn test_input_4() {
+        let input = include_str!("../test4.txt");
+        assert_eq!("4", part2(input));
+    }
+
+    #[test]
+    fn test_input_5() {
+        let input = include_str!("../test5.txt");
+        assert_eq!("8", part2(input));
+    }
+
+    #[test]
+    fn test_input_6() {
+        let input = include_str!("../test6.txt");
+        assert_eq!("10", part2(input));
     }
 }
