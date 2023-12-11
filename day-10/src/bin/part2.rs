@@ -177,8 +177,6 @@ fn part2(input: &str) -> String {
         insides.push(points_inside);
     }
 
-    dbg!(&insides);
-
     insides.iter().sum::<u32>().to_string()
 }
 
